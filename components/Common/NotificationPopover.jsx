@@ -90,7 +90,9 @@ const NotificationPopover = () => {
 
   useEffect(() => {
     if (userId && accessToken && !socketRef.current) {
-      const wsUrl = `ws://localhost:8000/ws/notifications/${userId}/?token=${accessToken}`
+      // const wsUrl = `ws://localhost:8000/ws/notifications/${userId}/?token=${accessToken}`
+      const wsUrl = `wss://timesheet-backend-4bj0.onrender.com/ws/notifications/${userId}/?token=${accessToken}`
+      console.log("🔌 Connecting to WebSocket:", wsUrl)
 
       const socket = new WebSocket(wsUrl)
       socketRef.current = socket
