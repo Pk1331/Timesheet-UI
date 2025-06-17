@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react"
 
-// const BASE_URL = "https://web-production-11c4.up.railway.app/api"
-const BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api"
+// const BASE_URL = "http://localhost:8000/api"
+const BASE_URL = "https://timesheet-backend-4bj0.onrender.com/api"
 
 const makeRequest = async (endpoint, method = "GET", body = null) => {
   try {
