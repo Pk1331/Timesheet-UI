@@ -10,9 +10,9 @@ const DeleteTeam = ({ teamId, fetchTeams, closeMenu, showToast }) => {
     setLoading(true)
     try {
       await api.delete(`teams/${teamId}/delete/`)
-      fetchTeams()
       showToast("Team deleted successfully!")
       closeMenu()
+      await fetchTeams()
     } catch (error) {
       showToast("Failed to delete team", "error")
       console.error("Error deleting team:", error)

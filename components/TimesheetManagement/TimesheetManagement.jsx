@@ -3,7 +3,6 @@ import { Routes, Route, Navigate, useNavigate } from "react-router-dom"
 import CreateTimesheet from "./CreateTimesheet"
 import ViewTimesheets from "./ViewTimesheets"
 import TimesheetList from "./TimesheetList"
-import TeamLeaderReview from "./TeamLeaderReview"
 import AdminReviewTimesheet from "./AdminReviewTimesheet"
 import { FaListAlt } from "react-icons/fa"
 
@@ -42,14 +41,6 @@ const TimesheetManagement = () => {
       <div className="flex justify-center mb-6 space-x-4">
         {usertype !== "SuperAdmin" && (
           <>
-            {usertype === "TeamLeader" && (
-              <button
-                onClick={() => navigate(`${basePath}/leader-review`)}
-                className="bg-blue-500 text-white py-2 px-4 rounded shadow hover:bg-blue-600 transition duration-300 flex items-center"
-              >
-                <FaListAlt className="mr-2" /> Team Leader Review
-              </button>
-            )}
             {usertype === "Admin" && (
               <button
                 onClick={() => navigate(`${basePath}/admin-review`)}
@@ -85,7 +76,6 @@ const TimesheetManagement = () => {
         <Route path="create" element={<CreateTimesheet />} />
         <Route path="view" element={<ViewTimesheets />} />
         <Route path="list" element={<TimesheetList />} />
-        <Route path="leader-review" element={<TeamLeaderReview />} />
         <Route path="admin-review" element={<AdminReviewTimesheet />} />
         <Route
           path="*"

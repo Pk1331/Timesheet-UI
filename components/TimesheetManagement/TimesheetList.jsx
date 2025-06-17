@@ -12,12 +12,18 @@ import {
   FaCalendarAlt,
 } from "react-icons/fa"
 import EditTimesheetTable from "./EditTimesheetTable"
+import Lottie from "lottie-react"
+import loaderAnimation from "../../src/assets/myloader2.json"
 
 const TimesheetList = () => {
-  const [timesheetTables, setTimesheetTables] = useState([])
+  const [timesheetTables, setTimesheetTables] = useState({
+    date: "",
+    timesheets: [],
+  })
   const [editingTable, setEditingTable] = useState(null)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [loading, setLoading] = useState(false)
   const [viewingComments, setViewingComments] = useState(null)
   const [comments, setComments] = useState("")
   const [usertype, setUsertype] = useState("")
@@ -28,218 +34,209 @@ const TimesheetList = () => {
     fetchTimesheetTables()
   }, [selectedDate])
 
+  // Fetch timesheet tables based on selected date
   const fetchTimesheetTables = async () => {
     try {
-      const response = await api.get("timesheet-tables/pending-review/", {
+      const formattedDate = selectedDate.toLocaleDateString("en-CA")
+      const response = await api.get("timesheets/view/", {
         params: {
-          date: selectedDate.toISOString().split("T")[0],
-          viewMode: "Daily",
+          date: formattedDate,
         },
       })
-      setTimesheetTables(response.data.timesheet_tables || [])
+      setTimesheetTables(response.data.timesheet_table || [])
     } catch (error) {
       console.error("Error fetching timesheet tables:", error)
     }
   }
 
-  const fetchComments = async (timesheetTableId) => {
+  // Handling Delete Operation
+  const handleDeleteAll = async (timesheets) => {
     try {
-      const response = await api.get(
-        `timesheet-tables/${timesheetTableId}/comments/`
-      )
-      setComments(response.data.comments)
-      setViewingComments(true)
+      const ids = timesheets.map((ts) => ts.id)
+      await api.post(`/timesheets/bulk-delete/`, { ids })
+      toast.success("All timesheets deleted successfully!")
+      fetchTimesheetTables()
     } catch (error) {
-      console.error("Error fetching comments:", error)
+      toast.error("Failed to delete all timesheets!")
+      console.error("Error deleting timesheets:", error)
     }
   }
 
-  const handleDelete = async (timesheetTableId) => {
+  // Handling Sent Timsheets to Review
+  const handleSendForReviewAll = async (timesheets) => {
+    setLoading(true)
+    const timesheetIds = timesheets.map((ts) => ts.id)
     try {
-      await api.delete(`timesheet-tables/${timesheetTableId}/delete/`)
-      toast.success("Timesheet table deleted successfully!")
+      await api.post("timesheets/send-for-review/", {
+        timesheet_ids: timesheetIds,
+      })
+      toast.success("Timesheets sent for review successfully!")
       fetchTimesheetTables()
-    } catch (error) {
-      toast.error("Failed to delete timesheet table!")
-      console.error("Error deleting timesheet table:", error)
+    } catch (err) {
+      toast.error("Failed to send timesheets for review.")
+      console.error(err)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleSendForReview = async (timesheetTableId) => {
-    try {
-      await api.post(`timesheet-tables/${timesheetTableId}/send-to-review/`)
-      toast.success("Timesheet table sent for review successfully!")
-      fetchTimesheetTables()
-    } catch (error) {
-      console.error("Error sending timesheet table for review:", error)
-    }
-  }
+  // For Buttons Visibility based on the Status
+  const firstStatus =
+    timesheetTables.timesheets.length > 0
+      ? timesheetTables.timesheets[0].status
+      : null
+
+  const canEditDeleteSend =
+    firstStatus === "Draft" || firstStatus === "Rejected"
+
+  const hasComments = timesheetTables.timesheets.some(
+    (ts) => ts.comments && ts.comments.length > 0
+  )
+  const showCommentsButton = hasComments || firstStatus === "Rejected"
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-lg">
+    <div className="p-6 bg-white rounded-2xl shadow-xl">
       <ToastContainer />
-      <h3 className="text-xl font-bold mb-4">Timesheet List</h3>
+      <h3 className="text-2xl font-semibold mb-6 text-gray-800">
+        Timesheet List
+      </h3>
 
       {/* Date Picker */}
-      <div className="mb-4">
-        <label className="block text-gray-800 font-semibold mb-2">
-          📅 Select Date
+      <div className="mb-6">
+        <label className="block text-gray-700 font-medium mb-2">
+          Select Date
         </label>
-        <div className="relative w-48">
-          <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 z-10 pl-3">
-            <FaCalendarAlt className="text-blue-500" />
-          </span>
+        <div className="relative w-64">
+          <FaCalendarAlt className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-500" />
           <DatePicker
             selected={selectedDate}
             onChange={(date) => setSelectedDate(date)}
-            className="border border-gray-300 p-3 pl-14 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-md text-gray-800 text-base transition-all duration-200 hover:border-blue-500"
+            className="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 shadow-sm"
             placeholderText="Choose a date..."
           />
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table Display */}
       {timesheetTables.length === 0 ? (
-        <div className="text-center text-gray-500">
+        <div className="text-center text-gray-500 mt-8">
           No timesheet tables found.
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <div className="shadow-lg rounded-lg overflow-hidden">
-            <table className="w-full table-auto border-collapse rounded-lg">
-              {/* Table Header */}
-              <thead className="bg-gray-800 text-white">
+        <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-md">
+          <div className="overflow-y-auto max-h-[400px]">
+            {/* TimeSheet Table */}
+            <table className="w-full min-w-[900px] text-sm text-left">
+              <thead className="bg-blue-600 text-white sticky top-0">
                 <tr>
-                  <th className="px-5 py-3 text-center border">Date</th>
-                  <th className="px-5 py-3 text-center border">Project</th>
-                  <th className="px-5 py-3 text-left border">Task</th>
-                  <th className="px-5 py-3 text-left border">Submitted To</th>
-                  <th className="px-5 py-3 text-left border">Status</th>
-                  <th className="px-5 py-3 text-left border">Description</th>
-                  <th className="px-5 py-3 text-left border">Hours</th>
+                  <th className="px-6 py-3 text-center border-r">Date</th>
+                  <th className="px-6 py-3 text-center border-r">Project</th>
+                  <th className="px-6 py-3 border-r">Task</th>
+                  <th className="px-6 py-3 border-r">Description</th>
+                  <th className="px-6 py-3 text-center border-r">Department</th>
+                  <th className="px-6 py-3 border-r">Hours</th>
                 </tr>
               </thead>
-
-              {/* Table Body */}
               <tbody>
-                {timesheetTables.map((table) =>
-                  table.timesheets.map((timesheet, index) => (
+                {timesheetTables?.timesheets?.length > 0 ? (
+                  timesheetTables.timesheets.map((timesheet, index) => (
                     <tr
                       key={timesheet.id}
                       className={`${
                         index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                      } hover:bg-gray-100 transition-all duration-200`}
+                      } hover:bg-blue-50 transition`}
                     >
-                      <td className="border px-5 py-3 text-center flex items-center justify-center space-x-2 whitespace-nowrap">
+                      <td className="px-6 py-3 border-r text-center whitespace-nowrap flex items-center justify-center gap-2">
                         <FaCalendarAlt className="text-blue-500" />
                         <span>{timesheet.date}</span>
                       </td>
-                      <td className="border px-5 py-3">{timesheet.project}</td>
-                      <td className="border px-5 py-3">{timesheet.task}</td>
-                      <td className="border px-5 py-3">
-                        {timesheet.submitted_to}
+                      <td className="px-6 py-3 border-r text-center">
+                        {timesheet.project}
                       </td>
-                      <td className="border px-5 py-3">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            timesheet.status === "Completed"
-                              ? "bg-green-100 text-green-700"
-                              : timesheet.status === "On Progress"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {timesheet.status}
-                        </span>
-                      </td>
-                      <td className="border px-5 py-3">
+                      <td className="px-6 py-3 border-r">{timesheet.task}</td>
+                      <td className="px-6 py-3 border-r">
                         {timesheet.description}
                       </td>
-                      <td className="border px-5 py-3">{timesheet.hours}</td>
+                      <td className="px-6 py-3 border-r text-center">
+                        {timesheet.department}
+                      </td>
+                      <td className="px-6 py-3 border-r">{timesheet.hours}</td>
                     </tr>
                   ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="text-center py-4">
+                      No timesheets available
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end mt-4 space-x-3">
-            {usertype === "User" &&
-              timesheetTables[0].status !== "Approved by Team Leader" && (
-                <>
-                  {timesheetTables[0].status === "Rejected by Team Leader" && (
-                    <button
-                      className="bg-yellow-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-yellow-600 transition duration-300"
-                      onClick={() => fetchComments(timesheetTables[0].id)}
-                    >
-                      <FaComment />
-                      <span>View Comments</span>
-                    </button>
-                  )}
-                  <button
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-600 transition duration-300"
-                    onClick={() => setEditingTable(timesheetTables[0])}
-                  >
-                    <FaEdit />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    className="bg-red-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-red-600 transition duration-300"
-                    onClick={() => setConfirmDelete(timesheetTables[0].id)}
-                  >
-                    <FaTrash />
-                    <span>Delete</span>
-                  </button>
-                  <button
-                    className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-green-600 transition duration-300"
-                    onClick={() => handleSendForReview(timesheetTables[0].id)}
-                  >
-                    <FaPaperPlane />
-                    <span>Send for Review</span>
-                  </button>
-                </>
-              )}
-            {usertype === "TeamLeader" &&
-              timesheetTables[0].status !== "Approved by Admin" && (
-                <>
-                  {timesheetTables[0].status === "Rejected by Admin" && (
-                    <button
-                      className="bg-yellow-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-yellow-600 transition duration-300"
-                      onClick={() => fetchComments(timesheetTables[0].id)}
-                    >
-                      <FaComment />
-                      <span>View Comments</span>
-                    </button>
-                  )}
-                  <button
-                    className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-600 transition duration-300"
-                    onClick={() => setEditingTable(timesheetTables[0])}
-                  >
-                    <FaEdit />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    className="bg-red-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-red-600 transition duration-300"
-                    onClick={() => setConfirmDelete(timesheetTables[0].id)}
-                  >
-                    <FaTrash />
-                    <span>Delete</span>
-                  </button>
-                  <button
-                    className="bg-green-500 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-green-600 transition duration-300"
-                    onClick={() => handleSendForReview(timesheetTables[0].id)}
-                  >
-                    <FaPaperPlane />
-                    <span>Send for Review</span>
-                  </button>
-                </>
-              )}
+          <div className="p-4 flex flex-wrap justify-end gap-3 bg-gray-50">
+            {canEditDeleteSend && (
+              <>
+                {/* Edit Button  */}
+                <button
+                  onClick={() => setEditingTable(timesheetTables.timesheets)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                >
+                  <FaEdit />
+                  Edit
+                </button>
+
+                {/* Delete Button */}
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                >
+                  <FaTrash />
+                  Delete
+                </button>
+
+                {/* Review Button */}
+                <button
+                  onClick={() =>
+                    handleSendForReviewAll(timesheetTables.timesheets)
+                  }
+                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                >
+                  <FaPaperPlane />
+                  Send for Review
+                </button>
+              </>
+            )}
+
+            {/* Comments Button When Rejected */}
+            {showCommentsButton && (
+              <button
+                onClick={() => {
+                  const firstRejected = timesheetTables.timesheets.find(
+                    (ts) =>
+                      ts.status === "Rejected" &&
+                      ts.rejection_feedback?.trim() !== ""
+                  )
+
+                  const feedback = firstRejected
+                    ? `• [${firstRejected.date}] ${firstRejected.project}: ${firstRejected.rejection_feedback}`
+                    : "No rejection feedback available."
+
+                  setComments(feedback)
+                  setViewingComments(true)
+                }}
+                className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              >
+                <FaComment />
+                View Feedback
+              </button>
+            )}
           </div>
         </div>
       )}
 
-      {/* Edit Timesheet Modal */}
+      {/* Edit Modal */}
       {editingTable && (
         <EditTimesheetTable
           editingTable={editingTable}
@@ -248,27 +245,43 @@ const TimesheetList = () => {
         />
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Modal */}
       {confirmDelete && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/70 bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h3 className="text-xl font-bold mb-4">Confirm Delete</h3>
-            <p>Are you sure you want to delete this timesheet table?</p>
-            <div className="flex justify-end mt-4 space-x-2">
+        <div className="fixed inset-0 bg-black/50 bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 shadow-xl max-w-md w-full">
+            <h2 className="text-xl font-bold text-red-600 mb-4">
+              ⚠️ Confirm Deletion
+            </h2>
+            <p className="mb-4 text-gray-800">
+              You are about to{" "}
+              <span className="font-semibold text-red-600">
+                delete all timesheet entries
+              </span>{" "}
+              for the selected date.
+            </p>
+            <p className="mb-4 text-sm text-red-500 font-medium">
+              This action is{" "}
+              <span className="font-bold uppercase">permanent</span> and{" "}
+              <u>cannot be undone</u>.
+              <br />
+              Please make sure you want to proceed.
+            </p>
+
+            <div className="flex justify-end gap-3">
               <button
                 onClick={() => setConfirmDelete(null)}
-                className="bg-gray-500 text-white p-2 rounded"
+                className="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-lg"
               >
                 Cancel
               </button>
               <button
                 onClick={() => {
-                  handleDelete(confirmDelete)
+                  handleDeleteAll(timesheetTables.timesheets)
                   setConfirmDelete(null)
                 }}
-                className="bg-red-500 text-white p-2 rounded"
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
               >
-                Delete
+                Delete All
               </button>
             </div>
           </div>
@@ -277,30 +290,40 @@ const TimesheetList = () => {
 
       {/* Comments Modal */}
       {viewingComments && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/70 bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg relative w-2/5">
+        <div className="fixed inset-0 bg-black/50 bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 shadow-xl max-w-lg w-full relative">
             <button
-              onClick={() => setViewingComments(null)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-3xl"
+              onClick={() => setViewingComments(false)}
+              className="absolute top-4 right-4 text-gray-500 text-2xl"
             >
               &times;
             </button>
-            <h3 className="text-xl font-bold mb-4">Comments</h3>
+            <h3 className="text-xl font-bold mb-4">Rejection Feedback</h3>
             <textarea
               value={comments}
               readOnly
-              className="border p-2 rounded w-full mb-4"
-              style={{ height: "200px" }}
+              className="w-full border border-gray-300 p-3 rounded-md h-40 resize-none whitespace-pre-wrap"
             />
-            <div className="flex justify-end mt-4 space-x-2">
+            <div className="flex justify-end mt-4">
               <button
-                onClick={() => setViewingComments(null)}
-                className="bg-gray-500 text-white p-2 rounded"
+                onClick={() => setViewingComments(false)}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
               >
                 Close
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Loader Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black/50 bg-opacity-70 flex items-center justify-center z-50">
+          <Lottie
+            animationData={loaderAnimation}
+            loop
+            className="w-2/4 h-2/4"
+          />
         </div>
       )}
     </div>

@@ -234,7 +234,7 @@ const ProjectList = () => {
               variant="contained"
               color="primary"
               startIcon={<FiPlus />}
-              onClick={() => setShowCreateProjectModal(true)} 
+              onClick={() => setShowCreateProjectModal(true)}
             >
               New Project
             </Button>

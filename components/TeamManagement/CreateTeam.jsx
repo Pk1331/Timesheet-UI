@@ -44,7 +44,7 @@ const CreateTeam = ({ closeModal, fetchTeams, showToast }) => {
   // usertype and logged in user info From LocalStorage
   useEffect(() => {
     const usertypeParam = localStorage.getItem("usertype")
-    const userId = localStorage.getItem("user_id")
+    const userId = parseInt(localStorage.getItem("user_id"), 10)
     const username = localStorage.getItem("username")
     setUsertype(usertypeParam)
     setLoggedInUserId(userId)

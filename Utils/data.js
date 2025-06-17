@@ -1,5 +1,45 @@
 // utils/data.js
 
+// Login page
+export const carouselItems = [
+  {
+    image: "/Login/Designer.svg",
+    title: "Smart Time Tracking",
+    description:
+      "Easily log work hours and monitor team productivity with intuitive time entry tools.",
+  },
+  {
+    image: "/Login/Company-cuate.svg",
+    title: "Centralized Admin Dashboard",
+    description:
+      "Gain full visibility and control over users, teams, and projects from one powerful interface.",
+  },
+  {
+    image: "/Login/SEO.svg",
+    title: "Role-Based Dashboards",
+    description:
+      "Deliver a personalized experience with tailored access for Admins, Team Leads, and Employees.",
+  },
+  {
+    image: "/Login/New-employee-bro.svg",
+    title: "Seamless Onboarding",
+    description:
+      "Quickly register and assign roles to new users for a smooth onboarding experience.",
+  },
+  {
+    image: "/Login/Multitasking-amico.svg",
+    title: "Task Management Simplified",
+    description:
+      "Assign, track, and review tasks across departments effortlessly and in real-time.",
+  },
+  {
+    image: "/Login/Work-in-progress-bro.svg",
+    title: "Insightful Reporting & Analytics",
+    description:
+      "Analyze hours logged per user, team, or project with easy-to-understand reports.",
+  },
+]
+
 // User data with assigned teams
 export const users = [
   { id: 1, name: "John Doe", team: "Dev" },

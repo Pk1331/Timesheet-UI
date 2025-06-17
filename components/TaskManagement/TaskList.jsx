@@ -23,7 +23,7 @@ import { DataGrid } from "@mui/x-data-grid"
 import MoreVertIcon from "@mui/icons-material/MoreVert"
 import CloseIcon from "@mui/icons-material/Close"
 import { FaEdit, FaTrash, FaUserCheck } from "react-icons/fa"
-import { FiDownload, FiPlus, } from "react-icons/fi"
+import { FiDownload, FiPlus } from "react-icons/fi"
 import { toast, ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 import CreateTask from "./CreateTask"
@@ -62,6 +62,7 @@ const TaskList = () => {
       const assignedTasks = tasksResponse.data.assigned_tasks || []
       const tasks = [...createdTasks, ...assignedTasks]
       setTasks(tasks)
+      console.log("Fetched tasks:", tasks)
       setFilteredTasks(tasks)
     } catch (error) {
       console.error("Error fetching tasks:", error)
@@ -176,6 +177,7 @@ const TaskList = () => {
     setassignTask({ ...selectedTask })
     handleMenuClose()
   }
+
   const handleEditClick = () => {
     if (!selectedTask) {
       console.error("Error: No team selected for editing!")
@@ -464,7 +466,7 @@ const TaskList = () => {
                 </ListItem>
               )}
 
-              <ListItem>
+              {/* <ListItem>
                 <ListItemText
                   primary={
                     <>
@@ -497,7 +499,7 @@ const TaskList = () => {
                     </>
                   }
                 />
-              </ListItem>
+              </ListItem> */}
 
               <ListItem>
                 <ListItemText
@@ -537,7 +539,7 @@ const TaskList = () => {
 
         {/* Create Task Modal*/}
         {showCreateTaskModal && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/70 bg-opacity-50 z-50">
+          <div className="fixed inset-0 flex items-center justify-center bg-black/40 bg-opacity-50 z-50">
             <div className="bg-white p-6 rounded-lg shadow-xl">
               <CreateTask
                 closeModal={() => setShowCreateTaskModal(false)}

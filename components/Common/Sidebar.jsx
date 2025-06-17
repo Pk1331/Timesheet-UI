@@ -3,7 +3,9 @@ import { FaTachometerAlt, FaSignOutAlt, FaBell, FaTimes } from "react-icons/fa"
 import { IoChevronBack, IoChevronForward } from "react-icons/io5"
 import menuItems from "../../Utils/menuItems"
 import TokenExpire from "./TokenExpire"
-import { Popover } from "@mui/material"
+import { useNavigate } from "react-router-dom"
+import api from "../../src/api"
+import Notifications from "./NotificationPopover"
 
 const Sidebar = ({
   usertype,
@@ -11,11 +13,15 @@ const Sidebar = ({
   isSidebarOpen,
   setSidebarOpen,
 }) => {
+  const navigate = useNavigate()
+
   const [userInfo, setUserInfo] = useState({})
   const [selected, setSelected] = useState(
     localStorage.getItem("selectedMenuItem") || "Dashboard"
   )
   const [anchorEl, setAnchorEl] = useState(null)
+  const [notifications, setNotifications] = useState([])
+  const toggleSidebar = () => setSidebarOpen(!isSidebarOpen)
 
   useEffect(() => {
     setUserInfo({
@@ -30,29 +36,21 @@ const Sidebar = ({
     localStorage.setItem("selectedMenuItem", selected)
   }, [selected])
 
-  const toggleSidebar = () => setSidebarOpen(!isSidebarOpen)
+  // Handle Logo Click
+  const handleLogoClick = () => {
+    const userType = localStorage.getItem("usertype")
+    let dashboardPath = "/"
+    if (userType === "Admin") {
+      dashboardPath = "/admin-dashboard/dashboard"
+    } else if (userType === "User") {
+      dashboardPath = "/user-dashboard/dashboard"
+    } else if (userType === "SuperAdmin") {
+      dashboardPath = "/superadmin-dashboard/dashboard"
+    }
 
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: "New task assigned!", read: false },
-    { id: 2, message: "Meeting at 3 PM", read: false },
-    { id: 3, message: "Timesheet approval pending", read: false },
-  ])
-
-  const markAsRead = (id) => {
-    setNotifications((prevNotifications) =>
-      prevNotifications.map((notification) =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    )
-  }
-  const handleBellClick = (event) => {
-    setAnchorEl(event.currentTarget)
+    navigate(dashboardPath)
   }
 
-  const handleClose = () => {
-    setAnchorEl(null)
-  }
-  const notificationCount = notifications.filter((n) => !n.read).length
   return (
     <div className="relative group">
       {/* Sidebar */}
@@ -66,24 +64,15 @@ const Sidebar = ({
             {/* Sidebar Header */}
             <div className="p-4 flex items-center justify-between border-b border-gray-300">
               {/* App Name */}
-              <span className="text-xl font-bold text-gray-800">
-                TimesheetAPP
-              </span>
+              <img
+                src="/Logo/ivista_logo.svg"
+                alt="Ivista Logo"
+                className="h-10 w-40 cursor-pointer"
+                onClick={handleLogoClick}
+              />
 
               {/* Notification Bell */}
-              <div className="relative mr-4">
-                <FaBell
-                  className="text-gray-600 text-2xl cursor-pointer hover:text-gray-800"
-                  onClick={handleBellClick}
-                />
-
-                {/* Notification Count Badge */}
-                {notificationCount > 0 && (
-                  <span className="absolute -top-2 -right-1 bg-red-500 text-white text-xs font-bold px-1  rounded-full">
-                    {notificationCount}
-                  </span>
-                )}
-              </div>
+              <Notifications />
             </div>
 
             {/* Sidebar Navigation */}
@@ -178,69 +167,6 @@ const Sidebar = ({
       )}
 
       {/* Notification Popover */}
-      <Popover
-        open={Boolean(anchorEl)}
-        anchorEl={anchorEl}
-        onClose={handleClose}
-        anchorOrigin={{
-          vertical: "top",
-          horizontal: "center",
-        }}
-        transformOrigin={{
-          vertical: "center",
-          horizontal: "center",
-        }}
-        PaperProps={{
-          style: {
-            width: "300px",
-            maxHeight: "400px",
-            overflow: "hidden",
-            padding: "10px",
-            position: "relative",
-          },
-        }}
-      >
-        {/* Sticky Header (Title + Close Button) */}
-        <div className="flex justify-between items-center p-2 border-b border-gray-300 bg-white sticky top-0 z-10">
-          <h3 className="text-lg font-semibold text-gray-800">Notifications</h3>
-          <button
-            onClick={handleClose}
-            className="text-gray-600 hover:text-gray-800"
-          >
-            <FaTimes size={18} />
-          </button>
-        </div>
-
-        {/* Scrollable Notification List */}
-        <div className="max-h-64 overflow-y-auto p-2 space-y-2">
-          {notifications.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center">
-              No new notifications.
-            </p>
-          ) : (
-            notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`p-2 rounded-lg shadow-sm text-sm flex justify-between items-center ${
-                  notification.read
-                    ? "bg-gray-300 text-gray-600"
-                    : "bg-gray-100"
-                }`}
-              >
-                <span>{notification.message}</span>
-                {!notification.read && (
-                  <button
-                    onClick={() => markAsRead(notification.id)}
-                    className="text-blue-500 text-xs font-semibold ml-2 hover:underline"
-                  >
-                    Mark as Read
-                  </button>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      </Popover>
     </div>
   )
 }

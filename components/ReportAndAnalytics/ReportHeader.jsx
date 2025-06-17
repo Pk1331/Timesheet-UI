@@ -30,19 +30,15 @@ const ReportHeader = ({
     { id: 103, name: "Project Gamma" },
   ])
 
+  const [selectedUserId, setSelectedUserId] = useState("")
+  const [selectedProjectId, setSelectedProjectId] = useState("")
   const [anchorEl, setAnchorEl] = useState(null)
   const open = Boolean(anchorEl)
 
   useEffect(() => {
-    // Uncomment when backend is ready
-    // fetch("/api/users")
-    //   .then((res) => res.json())
-    //   .then((data) => setUsers(data))
-    //   .catch((err) => console.error("Error fetching users:", err))
-    // fetch("/api/projects")
-    //   .then((res) => res.json())
-    //   .then((data) => setProjects(data))
-    //   .catch((err) => console.error("Error fetching projects:", err))
+    // Pre-select "All" by default
+    setSelectedUser("")
+    setSelectedProject("")
   }, [])
 
   const handleMenuClick = (event) => {
@@ -52,19 +48,26 @@ const ReportHeader = ({
   const handleMenuClose = (format) => {
     setAnchorEl(null)
     if (format) {
-      handleDownload(format) // Pass selected format to parent function
+      handleDownload(format)
     }
   }
 
   return (
     <Box p={2} bgcolor="#f5f5f5" borderRadius={2} boxShadow={2}>
       <Grid container spacing={2} alignItems="center">
+        {/* User Dropdown */}
         <Grid item xs={12} sm={6} md={3}>
           <FormControl fullWidth size="small">
-            <InputLabel>User</InputLabel>
+            <InputLabel id="user-label">User</InputLabel>
             <Select
-              defaultValue=""
-              onChange={(e) => setSelectedUser(e.target.value)}
+              labelId="user-label"
+              id="user-select"
+              value={selectedUserId}
+              label="User"
+              onChange={(e) => {
+                setSelectedUserId(e.target.value)
+                setSelectedUser(e.target.value)
+              }}
             >
               <MenuItem value="">All Users</MenuItem>
               {users.map((user) => (
@@ -76,12 +79,19 @@ const ReportHeader = ({
           </FormControl>
         </Grid>
 
+        {/* Project Dropdown */}
         <Grid item xs={12} sm={6} md={3}>
           <FormControl fullWidth size="small">
-            <InputLabel>Project</InputLabel>
+            <InputLabel id="project-label">Project</InputLabel>
             <Select
-              defaultValue=""
-              onChange={(e) => setSelectedProject(e.target.value)}
+              labelId="project-label"
+              id="project-select"
+              value={selectedProjectId}
+              label="Project"
+              onChange={(e) => {
+                setSelectedProjectId(e.target.value)
+                setSelectedProject(e.target.value)
+              }}
             >
               <MenuItem value="">All Projects</MenuItem>
               {projects.map((project) => (

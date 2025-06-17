@@ -183,6 +183,7 @@ const EditTeam = ({ editingTeam, setEditingTeam, fetchTeams, showToast }) => {
     label: manager.username,
   }))
 
+  // Hanling Manager Selection For Superadmin
   const handleAccountManagerSelection = (selectedOptions) => {
     const managerIds = selectedOptions.map((option) => option.value)
 
@@ -192,11 +193,7 @@ const EditTeam = ({ editingTeam, setEditingTeam, fetchTeams, showToast }) => {
     }))
   }
 
-  const memberOptions = members.map((member) => ({
-    value: member.id,
-    label: member.username,
-  }))
-
+  // Handle Member Selection
   const handleMemberSelection = (selectedOptions) => {
     const memberIds = selectedOptions.map((option) => option.value)
 
@@ -205,7 +202,6 @@ const EditTeam = ({ editingTeam, setEditingTeam, fetchTeams, showToast }) => {
       member_ids: memberIds,
     }))
 
-    // Ensure all selected members are added to the members list
     setMembers((prevMembers) => {
       const newSelectedMembers = selectedOptions.map((option) => ({
         id: option.value,
@@ -224,11 +220,23 @@ const EditTeam = ({ editingTeam, setEditingTeam, fetchTeams, showToast }) => {
     })
   }
 
+  // Cleaning Team Data Before Sending to Backend
+  const cleanTeamData = {
+    ...teamData,
+    account_manager_ids: Array.isArray(teamData.account_manager_ids)
+      ? teamData.account_manager_ids.map(Number)
+      : teamData.account_manager_ids
+      ? [Number(teamData.account_manager_ids)]
+      : [],
+  }
+
+  // Handle Submit
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     try {
-      await api.put(`teams/${editingTeam.id}/edit/`, teamData)
+      console.log(cleanTeamData)
+      await api.put(`teams/${editingTeam.id}/edit/`, cleanTeamData)
       showToast("Team updated successfully!")
       setEditingTeam(null)
       fetchTeams()
@@ -254,26 +262,25 @@ const EditTeam = ({ editingTeam, setEditingTeam, fetchTeams, showToast }) => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Select Project */}
+
             <div className="mb-4">
               <label className="block text-gray-700 mb-2">Select Project</label>
               <select
                 name="project_id"
                 value={teamData.project_id}
                 onChange={handleChange}
-                disabled={
-                  usertype === "Admin" || usertype.includes("TeamLeader")
-                }
+                disabled={usertype.includes("TeamLeader")}
                 className={`border p-3 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500 
-                ${
-                  usertype === "Admin" || usertype.includes("TeamLeader")
-                    ? "bg-gray-200 cursor-not-allowed"
-                    : "bg-white cursor-pointer"
-                }`}
+      ${
+        usertype.includes("TeamLeader")
+          ? "bg-gray-200 cursor-not-allowed"
+          : "bg-white cursor-pointer"
+      }`}
               >
-                {usertype === "Admin" || usertype.includes("TeamLeader") ? (
+                {usertype.includes("TeamLeader") ? (
                   editingTeam?.projects?.length > 0 ? (
                     editingTeam.projects.map((project) => (
-                      <option key={project.id} value={project.id} selected>
+                      <option key={project.id} value={project.id}>
                         {project.name}
                       </option>
                     ))

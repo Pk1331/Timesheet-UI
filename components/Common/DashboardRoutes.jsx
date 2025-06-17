@@ -10,6 +10,7 @@ import TeamManagement from "../TeamManagement/TeamManagement"
 import UserManagement from "../UserManagement/UserManagement"
 import ReportsAndAnalytics from "../ReportAndAnalytics/ReportsAndAnalytics"
 import SendTelegram from "./SendTelegram"
+import Chat from "./Chat"
 
 const DashboardRoutes = ({ usertype }) => {
   return (
@@ -21,6 +22,7 @@ const DashboardRoutes = ({ usertype }) => {
       <Route path="tasks/*" element={<TaskManagement />} />
       <Route path="timesheets/*" element={<TimesheetManagement />} />
       <Route path="reports-and-analytics" element={<ReportsAndAnalytics />} />
+      <Route path="chat" element={<Chat />} />
       <Route path="profile" element={<Profile />} />
       <Route path="logout" element={<Logout />} />
       <Route path="send-message" element={<SendTelegram />} />

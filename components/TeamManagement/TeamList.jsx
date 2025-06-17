@@ -49,6 +49,7 @@ const TeamList = () => {
     try {
       const response = await api.get("teams/")
       const teams = response.data.teams || []
+      console.log("Fetching teams...")
       setTeams(teams)
       setFilteredTeams(teams)
     } catch (error) {

@@ -76,49 +76,122 @@ const CreateTask = ({ closeModal, fetchTasks, showToast }) => {
     const selectedProject = projects.find(
       (project) => project.id === selectedProjectId
     )
-    if (selectedProject) {
-      const managers =
-        selectedProject.teams.flatMap((team) => team.account_managers) || []
-      const leaders = selectedProject.teams
-        .flatMap((team) => [
-          team.team_leader_search,
-          team.team_leader_creative,
-          team.team_leader_development,
-        ])
-        .filter(Boolean)
-        .map((leader) => ({
-          id: leader.id,
-          username: leader.username,
-        }))
-      const assignedTeamType = assignedTeam?.team_type || ""
-      const assignedTeamMembers = selectedProject.teams.flatMap((team) => {
-        return team.subteams.filter((subteam) => {
-          return subteam.team === assignedTeamType
-        })
-      })
 
-      if (assignedTeamMembers.length === 0) {
+    if (!selectedProject) return
+
+    // Update the task's selected project
+    setNewTask((prev) => ({
+      ...prev,
+      project: selectedProjectId,
+      assigned_to: "",
+    }))
+
+    const allTeams = selectedProject.teams || []
+
+    const userId = parseInt(localStorage.getItem("user_id")) 
+    const usertype = localStorage.getItem("usertype")
+
+    const allAccountManagers = allTeams.flatMap(
+      (team) => team.account_managers || []
+    )
+
+    const allTeamLeaders = allTeams.flatMap((team) =>
+      [
+        team.team_leader_search,
+        team.team_leader_creative,
+        team.team_leader_development,
+      ].filter(Boolean)
+    )
+
+    const allMembers = allTeams.flatMap((team) => team.subteams || [])
+
+    if (usertype === "SuperAdmin") {
+      setAccountManagers([
+        ...allAccountManagers,
+        ...allTeamLeaders,
+        ...allMembers,
+      ])
+    } else if (usertype === "Admin") {
+      setTeamLeaders([...allTeamLeaders, ...allMembers])
+    } else if (usertype === "TeamLeader") {
+      const leaderTeam = allTeams.find((team) =>
+        [
+          team.team_leader_search,
+          team.team_leader_development,
+          team.team_leader_creative,
+        ].some((leader) => leader?.id === userId)
+      )
+
+      if (!leaderTeam) {
         setFilteredTeamMembers([
           {
             id: "none",
-            username: "No members of your team assigned to Selected Project",
+            username: "No team assigned to you in this project",
           },
         ])
-      } else {
-        setFilteredTeamMembers(assignedTeamMembers)
+        return
       }
-      setNewTask((prev) => ({
-        ...prev,
-        project: selectedProjectId,
-        assigned_to: "",
-      }))
 
-      setAccountManagers(managers)
-      setTeamLeaders(leaders)
-    } else {
-      console.log("No project found with this ID.")
+      let leaderType = ""
+      if (leaderTeam.team_leader_search?.id === userId) {
+        leaderType = "Search"
+      } else if (leaderTeam.team_leader_development?.id === userId) {
+        leaderType = "Development"
+      } else if (leaderTeam.team_leader_creative?.id === userId) {
+        leaderType = "Creative"
+      }
+
+      const filteredMembers = leaderTeam.subteams.filter(
+        (member) => member.team === leaderType
+      )
+
+      setFilteredTeamMembers(
+        filteredMembers.length > 0
+          ? filteredMembers
+          : [
+              {
+                id: "none",
+                username: "No members of your team assigned to this project",
+              },
+            ]
+      )
     }
   }
+
+  const getAssignableUsers = () => {
+    if (usertype === "SuperAdmin") {
+      return {
+        label: "Assign To",
+        users: accountManagers,
+        disabled: false,
+        emptyText: "Select a user",
+      }
+    }
+
+    if (usertype === "Admin") {
+      return {
+        label: "Assign to",
+        users: teamLeaders,
+        disabled: !teamLeaders.length,
+        emptyText: teamLeaders.length
+          ? "Select User"
+          : "No Team Leaders or Members",
+      }
+    }
+
+    if (usertype === "TeamLeader" && filteredTeamMembers.length > 0) {
+      return {
+        label: "Assign to Team Member",
+        users: filteredTeamMembers,
+        disabled: false,
+        emptyText: "Select Team Member",
+      }
+    }
+
+    return null
+  }
+
+  const assignableData = getAssignableUsers()
 
   const handleStartDateChange = (date) => {
     setNewTask({
@@ -234,85 +307,32 @@ const CreateTask = ({ closeModal, fetchTasks, showToast }) => {
             </select>
           </div>
 
-          {/* Assign to Account Manager (Only for SuperAdmins) */}
-          {usertype === "SuperAdmin" && (
+          {assignableData && (
             <div className="mb-4">
-              <label className="block text-gray-700 mb-2">
-                Assign to Account Manager
+              <label
+                htmlFor="assigned_to"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                {assignableData.label}
               </label>
               <select
                 name="assigned_to"
+                id="assigned_to"
                 value={newTask.assigned_to}
                 onChange={handleChange}
-                className="border p-3 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={!accountManagers.length}
+                className="block w-full px-3 py-2 border border-gray-300 bg-white text-gray-700 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={assignableData.disabled}
               >
                 <option value="" disabled>
-                  {accountManagers.length
-                    ? "Select Account Manager"
-                    : "No Account Managers Assigned"}
+                  {assignableData.emptyText}
                 </option>
-                {accountManagers.map((manager) => (
-                  <option key={manager.id} value={manager.id}>
-                    {manager.username}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Assign to Teamleaders (only for Admins) */}
-          {usertype === "Admin" && (
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">
-                Assign to Team Leader
-              </label>
-              {teamLeaders.length > 0 ? (
-                <select
-                  name="assigned_to"
-                  value={newTask.assigned_to}
-                  onChange={handleChange}
-                  className="border p-3 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="" disabled>
-                    Select Team Leader
-                  </option>
-                  {teamLeaders.map((leader) => (
-                    <option key={leader.id} value={leader.id}>
-                      {leader.username}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <p className="text-gray-500 text-sm italic">
-                  No team leaders available.
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Assigned to Team Members (By logged Teamleadee) */}
-          {usertype === "TeamLeader" && filteredTeamMembers.length > 0 && (
-            <div className="mb-4">
-              <label className="block text-gray-700 mb-2">
-                Assign to Team Member
-              </label>
-              <select
-                name="assigned_to"
-                value={newTask.assigned_to}
-                onChange={handleChange}
-                className="border p-3 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="" disabled>
-                  Select Team Member
-                </option>
-                {filteredTeamMembers.map((member) => (
+                {assignableData.users.map((user) => (
                   <option
-                    key={member.id}
-                    value={member.id}
-                    disabled={member.id === "none"}
+                    key={user.id}
+                    value={user.id}
+                    disabled={user.id === "none"}
                   >
-                    {member.username}
+                    {user.username}
                   </option>
                 ))}
               </select>

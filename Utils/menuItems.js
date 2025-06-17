@@ -6,8 +6,10 @@ import {
   FaClock,
   FaChartBar,
   FaTelegram,
+  FaComments, 
 } from "react-icons/fa"
 
+// Common menu for roles like Admin, TeamLeader, User
 const commonMenu = [
   { title: "Projects", icon: FaTasks, key: "projects/view-assigned" },
   { title: "Teams", icon: FaUsers, key: "teams/assigned" },
@@ -15,6 +17,14 @@ const commonMenu = [
   { title: "Timesheets", icon: FaClock, key: "timesheets" },
 ]
 
+// Chat Menu Item to be reused
+const chatMenuItem = {
+  title: "Chat",
+  icon: FaComments,
+  key: "chat",
+}
+
+// Full menu configuration
 const menuItems = {
   SuperAdmin: [
     { title: "Projects", icon: FaTasks, key: "projects/list" },
@@ -28,6 +38,7 @@ const menuItems = {
       key: "reports-and-analytics",
     },
     { title: "Telegram", icon: FaTelegram, key: "send-message" },
+    chatMenuItem,
   ],
   Admin: [
     ...commonMenu,
@@ -37,6 +48,7 @@ const menuItems = {
       key: "reports-and-analytics",
     },
     { title: "Telegram", icon: FaTelegram, key: "send-message" },
+    chatMenuItem,
   ],
   TeamLeader: [
     ...commonMenu,
@@ -46,10 +58,12 @@ const menuItems = {
       key: "reports-and-analytics",
     },
     { title: "Telegram", icon: FaTelegram, key: "send-message" },
+    chatMenuItem,
   ],
   User: [
     ...commonMenu,
     { title: "Telegram", icon: FaTelegram, key: "send-message" },
+    chatMenuItem,
   ],
 }
 
